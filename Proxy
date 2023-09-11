@@ -1,0 +1,29 @@
+import http.server
+import socketserver
+import urllib.request
+
+PORT = 8080  # You can choose a different port if needed
+
+class ProxyHandler(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self):
+        try:
+            # Log the incoming request
+            print(f"Request received for {self.path}")
+
+            # Send the request to the target server and get the response
+            response = urllib.request.urlopen(self.path)
+
+            # Send the response back to the client
+            self.send_response(response.code)
+            self.send_header("Content-type", response.headers.get("Content-type"))
+            self.end_headers()
+            self.copyfile(response, self.wfile)
+
+        except Exception as e:
+            # Handle errors gracefully
+            self.send_error(500, f"Proxy error: {str(e)}")
+
+if __name__ == "__main__":
+    with socketserver.TCPServer(("", PORT), ProxyHandler) as httpd:
+        print(f"Proxy server running on port {PORT}")
+        httpd.serve_forever()
